@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Cartograms with d3 &amp; TopoJSON</title>
+    <title>Republic of Ireland - Cartogram with d3 &amp; TopoJSON</title>
     <meta charset="utf-8">
     <meta property="og:image" content="placeholder.png">
     <script src="http://d3js.org/d3.v2.min.js"></script>
     <script src="lib/colorbrewer.js"></script>
-    <script src="lib/topojson.js"></script>
+    <script src="lib/topojson.js"></script>               
     <script src="cartogram.js"></script>
     <style type="text/css">
 
@@ -61,12 +61,12 @@
         margin: 0;
       }
 
-      path.state {
+      path.county {
         stroke: #666;
         stroke-width: .5;
       }
 
-      path.state:hover {
+      path.county:hover {
         stroke: #000;
       }
 
@@ -90,7 +90,7 @@
   </head>
   <body>
     <div id="container">
-      <h1>Cartograms with d3 &amp; TopoJSON</h1>
+      <h1>Republic of Ireland - Cartograms with d3 &amp; TopoJSON</h1>
       <form>
         <p>
           <label>Scale by <select id="field"></select></label>
@@ -102,31 +102,6 @@
         <img id="placeholder" alt="placeholder image for old browsers" src="placeholder.png">
         <svg id="map"></svg>
       </div>
-      <div id="about">
-        <h2>About</h2>
-        <p><a href="cartogram.js">cartogram.js</a> is a JavaScript implementation of
-        <a href="http://chrisman.scg.ulaval.ca/G360/dougenik.pdf">an algoritm to construct continuous area cartograms</a>,
-        by James A. Dougenik, Nicholas R. Chrisman and Duane R. Niemeyer,
-        &copy;1985 by the Association of American Geographers. This example combines
-        <a href="http://github.com/mbostock/topojson">TopoJSON</a>-encoded 
-        boundaries of the United States from
-        <a href="http://www.naturalearthdata.com/downloads/110m-cultural-vectors/">Natural Earth</a>
-        with
-        <a href="http://www.census.gov/popest/data/state/totals/2011/">2011 US Census population estimates</a>
-        to size each state proportionally.</p>
-        
-        <p>There&rsquo;s also a
-        <a class="hashish" href="?segmentized">segmentized topology</a>,
-        which distorts the shapes more fluidly than the
-        <a class="hashish" href="?">original</a>.</p>
-
-        <p>Designed and built but <a href="http://stamen.com/studio/shawn">Shawn Allen</a> at
-        <a href="http://stamen.com">Stamen</a>.
-        <a href="http://d3js.org">d3.js</a> does most of the heavy lifting;
-        colors by <a href="http://colorbrewer2.org">colorbrewer</a>.</p>
-      </div>
-
-      <a href="https://github.com/shawnbot/d3-cartogram/"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
     </div>
     <script>
 
@@ -136,19 +111,21 @@
         document.getElementsByTagName("form")[0].style.display = "none";
       }
 
-      // field definitions from:
-      // <http://www.census.gov/popest/data/national/totals/2011/files/NST-EST2011-alldata.pdf>
+      
       var percent = (function() {
             var fmt = d3.format(".2f");
             return function(n) { return fmt(n) + "%"; };
           })(),
           fields = [
             {name: "(no scale)", id: "none"},
-            // {name: "Census Population", id: "censuspop", key: "CENSUS%dPOP", years: [2010]},
-            // {name: "Estimate Base", id: "censuspop", key: "ESTIMATESBASE%d", years: [2010]},
+            {name: "Census Population", id: "censuspop", key: "CENSUS%dPOP", years: [2011]},
+            {name: "Road Traffic Accidents", id: "rta", key: "RTA%d", years: [2010]},
+            {name: "All-Ireland Senior Hurling Championships", id: "hurling", key: "HURLINGWINS", years:[]},
+            {name: "All-Ireland Senior Football Championships", id: "football", key: "FOOTBALLWINS", years:[]},
+            {name: "Births", id: "births", key: "BIRTHS%d"},
+            /*
             {name: "Population Estimate", id: "popest", key: "POPESTIMATE%d"},
             {name: "Population Change", id: "popchange", key: "NPOPCHG_%d", format: "+,"},
-            {name: "Births", id: "births", key: "BIRTHS%d"},
             {name: "Deaths", id: "deaths", key: "DEATHS%d"},
             {name: "Natural Increase", id: "natinc", key: "NATURALINC%d", format: "+,"},
             {name: "Int'l Migration", id: "intlmig", key: "INTERNATIONALMIG%d", format: "+,"},
@@ -161,6 +138,7 @@
             {name: "Int'l Migration Rate", id: "intlmigrate", key: "RINTERNATIONALMIG%d", years: [2011], format: percent},
             {name: "Net Domestic Migration Rate", id: "domesticmigrate", key: "RDOMESTICMIG%d", years: [2011], format: percent},
             {name: "Net Migration Rate", id: "netmigrate", key: "RNETMIG%d", years: [2011], format: percent},
+            */
           ],
           years = [2010, 2011],
           fieldsById = d3.nest()
@@ -202,30 +180,22 @@
           .attr("value", function(y) { return y; })
           .text(function(y) { return y; })
 
-      var map = d3.select("#map"),
-          zoom = d3.behavior.zoom()
-            .translate([-38, 32])
-            .scale(.94)
-            .scaleExtent([0.5, 10.0])
-            .on("zoom", updateZoom),
-          layer = map.append("g")
+      var map = d3.select("#map");
+      
+      var proj = d3.geo.albers()
+          .origin([-7.9,53.3])
+          .scale(6000)
+          .translate([400,250]);
+      var path = d3.geo.path().projection(proj);
+
+      var    layer = map.append("g")
             .attr("id", "layer"),
-          states = layer.append("g")
-            .attr("id", "states")
+          counties = layer.append("g")
+            .attr("id", "counties")
             .selectAll("path");
 
-      // map.call(zoom);
-      updateZoom();
 
-      function updateZoom() {
-        var scale = zoom.scale();
-        layer.attr("transform",
-          "translate(" + zoom.translate() + ") " +
-          "scale(" + [scale, scale] + ")");
-      }
-
-      var proj = d3.geo.albersUsa(),
-          topology,
+      var topology,
           geometries,
           rawData,
           dataById = {},
@@ -244,12 +214,12 @@
 
       var segmentized = location.search === "?segmentized",
           url = ["data",
-            segmentized ? "us-states-segmentized.topojson" : "us-states.topojson"
+            segmentized ? "ireland-segmentized.topojson" : "ireland.topojson"
           ].join("/");
       d3.json(url, function(topo) {
         topology = topo;
-        geometries = topology.objects.states.geometries;
-        d3.csv("data/nst_2011.csv", function(data) {
+        geometries = topology.objects.counties.geometries;
+        d3.csv("data/data.csv", function(data) {
           rawData = data;
           dataById = d3.nest()
             .key(function(d) { return d.NAME; })
@@ -264,17 +234,17 @@
             path = d3.geo.path()
               .projection(proj);
 
-        states = states.data(features)
+        counties = counties.data(features)
           .enter()
           .append("path")
-            .attr("class", "state")
+            .attr("class", "county")
             .attr("id", function(d) {
               return d.properties.NAME;
             })
             .attr("fill", "#fafafa")
             .attr("d", path);
 
-        states.append("title");
+        counties.append("title");
 
         parseHash();
       }
@@ -287,14 +257,14 @@
             path = d3.geo.path()
               .projection(proj);
 
-        states.data(features)
+        counties.data(features)
           .transition()
             .duration(750)
             .ease("linear")
             .attr("fill", "#fafafa")
             .attr("d", path);
 
-        states.select("title")
+        counties.select("title")
           .text(function(d) {
             return d.properties.NAME;
           });
@@ -311,7 +281,7 @@
             value = function(d) {
               return +d.properties[key];
             },
-            values = states.data()
+            values = counties.data()
               .map(value)
               .filter(function(n) {
                 return !isNaN(n);
@@ -329,7 +299,8 @@
         // normalize the scale to positive numbers
         var scale = d3.scale.linear()
           .domain([lo, hi])
-          .range([10, 1000]);
+          // was range([1, 1000])
+          .range([1, 100]);
 
         // tell the cartogram to use the scaled values
         carto.value(function(d) {
@@ -340,13 +311,13 @@
         var features = carto(topology, geometries).features;
 
         // update the data
-        states.data(features)
+        counties.data(features)
           .select("title")
             .text(function(d) {
               return [d.properties.NAME, fmt(value(d))].join(": ");
             });
 
-        states.transition()
+        counties.transition()
           .duration(750)
           .ease("linear")
           .attr("fill", function(d) {
